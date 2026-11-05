@@ -41,7 +41,8 @@ pub enum ThreadpoolCreateError {
     /// The thread count was below one.
     #[error("a threadpool needs at least one thread, got {0}")]
     InvalidThreadCount(i32),
-    /// ggml returned null
+    /// ggml returned null. Checked, though ggml v0.8.0 aborts the process
+    /// instead when it cannot allocate the pool or start a thread.
     #[error("null reference from ggml")]
     NullReturn,
 }
@@ -63,7 +64,8 @@ impl LlamaThreadpool {
     /// # Errors
     ///
     /// [`ThreadpoolCreateError::InvalidThreadCount`] when `n_threads < 1`,
-    /// [`ThreadpoolCreateError::NullReturn`] when ggml fails to create it.
+    /// [`ThreadpoolCreateError::NullReturn`] if ggml returns null (v0.8.0
+    /// aborts instead when it cannot allocate the pool or start a thread).
     pub fn new(
         n_threads: i32,
         priority: Option<ThreadpoolPriority>,
