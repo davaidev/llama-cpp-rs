@@ -323,6 +323,28 @@ pub fn mlock_supported() -> bool {
     unsafe { llama_cpp_sys_2::llama_supports_mlock() }
 }
 
+/// llama.cpp's system info line (`llama_print_system_info`): the features of
+/// every registered backend, as in `CPU : SSE3 = 1 | ... | OPENMP = 1 |`. The
+/// only place a build says whether ggml was configured with OpenMP: the
+/// `openmp` feature asks for it, but CMake falls back to ggml's own threads
+/// when the compiler has none (Apple clang).
+/// ```
+/// # use llama_cpp_2::system_info;
+/// let info = system_info();
+/// assert!(info.contains("CPU"));
+/// ```
+#[must_use]
+pub fn system_info() -> String {
+    // SAFETY: llama.cpp returns a pointer to a static, NUL-terminated buffer.
+    let info = unsafe { llama_cpp_sys_2::llama_print_system_info() };
+    if info.is_null() {
+        return String::new();
+    }
+    unsafe { std::ffi::CStr::from_ptr(info) }
+        .to_string_lossy()
+        .into_owned()
+}
+
 /// Convert a JSON schema string into a llama.cpp grammar string.
 #[cfg(feature = "common")]
 pub fn json_schema_to_grammar(schema_json: &str) -> Result<String> {
