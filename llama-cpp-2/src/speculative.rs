@@ -114,6 +114,27 @@ impl<'model> MtpSpeculative<'model> {
         &mut self.draft_context
     }
 
+    /// Access the draft context.
+    #[must_use]
+    pub fn draft_context(&self) -> &LlamaContext<'model> {
+        &self.draft_context
+    }
+
+    /// Free the speculative state and hand back `(target, draft)`, so a caller
+    /// can stop drafting and keep decoding on the target context.
+    #[must_use]
+    pub fn into_contexts(self) -> (LlamaContext<'model>, LlamaContext<'model>) {
+        let mut this = std::mem::ManuallyDrop::new(self);
+        // The same order as `Drop`: the speculative state goes before the
+        // contexts it points at.
+        unsafe { llama_cpp_sys_2::llama_rs_mtp_speculative_free(this.raw.as_mut_ptr()) }
+        // SAFETY: `this` is never dropped, so each context is moved out once
+        // and `raw` (already freed) is never used again.
+        let target = unsafe { std::ptr::read(&raw const this.target_context) };
+        let draft = unsafe { std::ptr::read(&raw const this.draft_context) };
+        (target, draft)
+    }
+
     /// Begin a new generation from the given prompt tokens.
     ///
     /// # Errors

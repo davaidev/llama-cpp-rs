@@ -219,6 +219,15 @@ impl LlamaModel {
         u32::try_from(unsafe { llama_cpp_sys_2::llama_model_n_layer(self.model.as_ptr()) }).unwrap()
     }
 
+    /// Returns the number of MTP (`nextn`) prediction layers the GGUF carries
+    /// (`llama_model_n_layer_nextn`): not part of [`Self::n_layer`], loaded only
+    /// with [`crate::model::params::LlamaModelParams::with_load_mtp`].
+    #[must_use]
+    pub fn n_layer_nextn(&self) -> u32 {
+        u32::try_from(unsafe { llama_cpp_sys_2::llama_model_n_layer_nextn(self.model.as_ptr()) })
+            .unwrap_or(0)
+    }
+
     /// Returns the number of attention heads within the model.
     pub fn n_head(&self) -> u32 {
         // It's never possible for this to panic because while the API interface is defined as an int32_t,
