@@ -114,6 +114,15 @@ impl<'model> LlamaContext<'model> {
         unsafe { llama_cpp_sys_2::llama_n_ctx(self.context.as_ptr()) }
     }
 
+    /// The recurrent-state snapshots per sequence this context really keeps
+    /// for rollback (`llama_n_rs_seq`). llama.cpp clamps the requested
+    /// [`crate::context::params::LlamaContextParams::with_n_rs_seq`] to 0 for an
+    /// architecture without recurrent rollback, so read it back here.
+    #[must_use]
+    pub fn n_rs_seq(&self) -> u32 {
+        unsafe { llama_cpp_sys_2::llama_n_rs_seq(self.context.as_ptr()) }
+    }
+
     /// Decodes the batch.
     ///
     /// # Errors
