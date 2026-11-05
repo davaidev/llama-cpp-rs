@@ -10,6 +10,7 @@ use crate::llama_batch::LlamaBatch;
 use crate::model::{LlamaLoraAdapter, LlamaModel};
 use crate::ptr::Ptr;
 use crate::sampling::LlamaSampler;
+use crate::threadpool::LlamaThreadpool;
 use crate::timing::LlamaTimings;
 use crate::token::data::LlamaTokenData;
 use crate::token::data_array::LlamaTokenDataArray;
@@ -29,6 +30,9 @@ pub struct LlamaContext<'a> {
     pub(crate) context: Ptr<llama_cpp_sys_2::llama_context>,
     /// Backend samplers kept alive for the context's lifetime.
     _backend_samplers: Vec<(i32, LlamaSampler)>,
+    /// The CPU threadpool attached with [`Self::attach_threadpool`]. A field,
+    /// so it drops after `llama_free` in [`Drop`].
+    threadpool: Option<LlamaThreadpool>,
     /// The context internally holds a reference to the model, which can be
     /// retrieved with `llama_get_model`.
     model: PhantomData<&'a LlamaModel>,
@@ -56,6 +60,7 @@ impl<'model> LlamaContext<'model> {
         Self {
             context: llama_context,
             _backend_samplers: Vec::new(),
+            threadpool: None,
             model: PhantomData,
             data: PhantomData,
         }
@@ -68,9 +73,19 @@ impl<'model> LlamaContext<'model> {
         Self {
             context: llama_context,
             _backend_samplers: backend_samplers,
+            threadpool: None,
             model: PhantomData,
             data: PhantomData,
         }
+    }
+
+    /// Attach a persistent CPU threadpool for both single-token and batch
+    /// decoding (`llama_attach_threadpool`). The context owns it from here on;
+    /// attaching another one replaces it.
+    pub fn attach_threadpool(&mut self, threadpool: LlamaThreadpool) {
+        let pool = threadpool.threadpool.as_ptr().cast_mut();
+        unsafe { llama_cpp_sys_2::llama_attach_threadpool(self.context.as_mut_ptr(), pool, pool) }
+        self.threadpool = Some(threadpool);
     }
 
     // FIXME(madsmtm): Somehow return `LlamaModel<'_>` here?

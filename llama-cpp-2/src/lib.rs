@@ -38,6 +38,7 @@ mod ptr;
 pub mod sampling;
 #[cfg(feature = "common")]
 pub mod speculative;
+pub mod threadpool;
 pub mod timing;
 pub mod token;
 pub mod token_type;
