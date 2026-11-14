@@ -135,8 +135,11 @@ extern "C" int llama_rs_fit_params(
     uint32_t n_ctx_min,
     const void * extra,
     enum ggml_log_level log_level) {
+    // llama.cpp takes a list of model files since ggml-org/llama.cpp#31185 (external PLE
+    // files); the wrapper keeps its single-path C signature.
+    const std::vector<std::string> paths_model{std::string(path_model)};
     return static_cast<int>(common_fit_params(
-        path_model,
+        paths_model,
         mparams,
         cparams,
         tensor_split,
